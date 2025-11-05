@@ -42,10 +42,10 @@ Quality Patches → Residual Noise → Classification Head → Deepfake Detectio
 - **Deployment**: Flask demo UI with video upload and verification
 
 ### Technical Achievements
-✅ **PRNU Extraction**: Wavelet-based denoising (Gaussian blur approximation)  
-✅ **Reference Patterns**: Camera-level fingerprints via averaging  
-✅ **CNN Classifier**: ResNet50 pretrained on ImageNet, fine-tuned for 9 classes  
-✅ **Forgery Detection**: Correlation coefficient < 0.4 threshold  
+✅ **PRNU Extraction**: Wavelet-based denoising (Gaussian blur approximation)
+✅ **Reference Patterns**: Camera-level fingerprints via averaging
+✅ **CNN Classifier**: ResNet50 pretrained on ImageNet, fine-tuned for 9 classes
+✅ **Forgery Detection**: Correlation coefficient < 0.4 threshold
 ✅ **Web Interface**: Flask + PyTorch backend for real-time analysis
 
 ---
@@ -65,13 +65,13 @@ import numpy as np
 def extract_prnu_frame(frame):
     # Convert to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    
+
     # Wavelet-based denoising (Wiener filter approximation)
     denoised = cv2.GaussianBlur(gray, (3,3), 0)
-    
+
     # Residual = Original - Denoised
     residual = gray - denoised
-    
+
     # Normalize residual
     residual = (residual - residual.mean()) / (residual.std() + 1e-8)
     return residual
@@ -84,7 +84,7 @@ def video_to_prnu(video_path, num_frames=30):
         if not ret: break
         frames.append(extract_prnu_frame(frame))
     cap.release()
-    
+
     # Aggregate PRNU from all frames
     prnu_map = np.mean(frames, axis=0)
     return prnu_map
@@ -127,7 +127,7 @@ class PRNUClassifier(nn.Module):
         super(PRNUClassifier, self).__init__()
         self.resnet = models.resnet50(pretrained=True)
         self.resnet.fc = nn.Linear(self.resnet.fc.in_features, num_classes)
-        
+
     def forward(self, x):
         return self.resnet(x)
 ```
@@ -153,14 +153,14 @@ for epoch in range(20):
     running_loss = 0
     for imgs, labels in train_loader:
         imgs, labels = imgs.to(device), labels.to(device)
-        
+
         optimizer.zero_grad()
         outputs = model(imgs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-    
+
     print(f"Epoch {epoch+1} Loss: {running_loss/len(train_loader):.4f}")
 ```
 
@@ -353,8 +353,8 @@ Contributions are welcome! Please:
 
 ## 📧 Contact
 
-**Author**: Pranav Patil  
-**Sponsor**: PiLabs  
+**Author**: Pranav Patil
+**Sponsor**: PiLabs
 **Repository**: [github.com/losthumanity/CameraSourceIdentification](https://github.com/losthumanity/CameraSourceIdentification)
 
 ---

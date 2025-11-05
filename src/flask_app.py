@@ -41,32 +41,32 @@ def allowed_file(filename):
 def load_models():
     """Load trained models and reference patterns"""
     global pipeline, forgery_detector, model_loaded
-    
+
     try:
         model_dir = './camera_model_data'
-        
+
         # Load metadata
         metadata_path = os.path.join(model_dir, 'prnu_dataset', 'dataset_metadata.json')
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
-        
+
         # Initialize pipeline
         pipeline = CameraIdentificationPipeline(num_classes=metadata['num_classes'])
         pipeline.class_names = metadata['class_names']
-        
+
         # Load trained model
         model_path = os.path.join(model_dir, 'best_prnu_classifier.pth')
         pipeline.model.load_state_dict(torch.load(model_path, map_location=pipeline.device))
         pipeline.model.eval()
-        
+
         # Load reference patterns for forgery detection
         ref_path = os.path.join(model_dir, 'prnu_dataset', 'reference_patterns.npz')
         forgery_detector = ForgeryDetector(reference_patterns_path=ref_path)
-        
+
         model_loaded = True
         print("✅ Models loaded successfully!")
         return True
-        
+
     except Exception as e:
         print(f"❌ Error loading models: {e}")
         print("Please train the model first using main_train.py")
@@ -84,37 +84,37 @@ def upload_video():
     """Handle video upload and analysis"""
     if not model_loaded:
         return jsonify({'error': 'Models not loaded. Please train the model first.'}), 500
-    
+
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
-    
+
     file = request.files['video']
-    
+
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-    
+
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type. Allowed: MP4, AVI, MOV, MKV, WEBM'}), 400
-    
+
     try:
         # Save uploaded file
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        
+
         # Analyze video
         result = pipeline.predict_video_source(filepath)
-        
+
         # Clean up uploaded file (optional)
         # os.remove(filepath)
-        
+
         return jsonify({
             'success': True,
             'prediction': result['predicted_camera'],
             'confidence': round(result['confidence'] * 100, 2),
             'probabilities': {k: round(v * 100, 2) for k, v in result['all_probabilities'].items()}
         })
-        
+
     except Exception as e:
         return jsonify({'error': f'Error processing video: {str(e)}'}), 500
 
@@ -124,39 +124,39 @@ def detect_forgery():
     """Detect if video is forged/deepfake"""
     if not model_loaded:
         return jsonify({'error': 'Models not loaded'}), 500
-    
+
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
-    
+
     file = request.files['video']
     expected_camera = request.form.get('expected_camera', None)
-    
+
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-    
+
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type'}), 400
-    
+
     try:
         # Save uploaded file
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        
+
         # Detect forgery
         if expected_camera:
             result = forgery_detector.detect_forgery(filepath, expected_camera)
         else:
             result = forgery_detector.analyze_video_authenticity(filepath)
-        
+
         # Clean up
         # os.remove(filepath)
-        
+
         return jsonify({
             'success': True,
             'result': result
         })
-        
+
     except Exception as e:
         return jsonify({'error': f'Error detecting forgery: {str(e)}'}), 500
 
@@ -169,7 +169,7 @@ def model_info():
             'loaded': False,
             'message': 'Models not loaded. Please train the model first.'
         })
-    
+
     return jsonify({
         'loaded': True,
         'num_classes': len(pipeline.class_names),
@@ -296,7 +296,7 @@ TEMPLATE_HTML = """<!DOCTYPE html>
             <p>PRNU-Based Forensic Video Analysis System</p>
             <p style="font-size: 0.9em; margin-top: 10px;">Sponsored by PiLabs | Powered by Deep Learning</p>
         </div>
-        
+
         <div class="content">
             <div class="upload-section">
                 <h2>🎬 Upload Video for Analysis</h2>
@@ -309,12 +309,12 @@ TEMPLATE_HTML = """<!DOCTYPE html>
                 </button>
                 <p id="fileName" style="margin-top: 15px; color: #667eea; font-weight: bold;"></p>
             </div>
-            
+
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p style="margin-top: 15px;">Analyzing video...</p>
             </div>
-            
+
             <div class="results" id="results">
                 <h2>📊 Analysis Results</h2>
                 <div class="result-item">
@@ -333,11 +333,11 @@ TEMPLATE_HTML = """<!DOCTYPE html>
                     <div id="allProbabilities"></div>
                 </div>
             </div>
-            
+
             <div id="error" class="error"></div>
         </div>
     </div>
-    
+
     <script>
         document.getElementById('videoInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -346,15 +346,15 @@ TEMPLATE_HTML = """<!DOCTYPE html>
                 uploadVideo(file);
             }
         });
-        
+
         function uploadVideo(file) {
             const formData = new FormData();
             formData.append('video', file);
-            
+
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').style.display = 'none';
             document.getElementById('error').textContent = '';
-            
+
             fetch('/api/upload', {
                 method: 'POST',
                 body: formData
@@ -362,7 +362,7 @@ TEMPLATE_HTML = """<!DOCTYPE html>
             .then(response => response.json())
             .then(data => {
                 document.getElementById('loading').style.display = 'none';
-                
+
                 if (data.error) {
                     document.getElementById('error').textContent = `Error: ${data.error}`;
                 } else {
@@ -374,13 +374,13 @@ TEMPLATE_HTML = """<!DOCTYPE html>
                 document.getElementById('error').textContent = `Error: ${error.message}`;
             });
         }
-        
+
         function displayResults(data) {
             document.getElementById('results').style.display = 'block';
             document.getElementById('predictedCamera').textContent = data.prediction;
             document.getElementById('confidence').textContent = `${data.confidence}%`;
             document.getElementById('confidenceBar').style.width = `${data.confidence}%`;
-            
+
             const probsHtml = Object.entries(data.probabilities)
                 .sort((a, b) => b[1] - a[1])
                 .map(([camera, prob]) => `
@@ -394,7 +394,7 @@ TEMPLATE_HTML = """<!DOCTYPE html>
                         </div>
                     </div>
                 `).join('');
-            
+
             document.getElementById('allProbabilities').innerHTML = probsHtml;
         }
     </script>
@@ -415,19 +415,19 @@ if __name__ == '__main__':
     print("Camera Source Identification - Flask Demo")
     print("Sponsored by PiLabs")
     print("=" * 60)
-    
+
     # Create template
     create_template()
-    
+
     # Load models
     if not load_models():
         print("\n⚠️  Warning: Models not loaded!")
         print("Please train the model first by running:")
         print("  python src/main_train.py")
         print("\nStarting server anyway for development...")
-    
+
     print("\n🚀 Starting Flask server...")
     print("📍 Open browser at: http://localhost:5000")
     print("=" * 60)
-    
+
     app.run(debug=True, host='0.0.0.0', port=5000)

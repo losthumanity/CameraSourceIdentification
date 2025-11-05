@@ -59,7 +59,7 @@ class PRNUClassifier(nn.Module):
         super(PRNUClassifier, self).__init__()
         # Load pretrained ResNet50
         self.resnet = models.resnet50(pretrained=True)
-        
+
         # Replace final classification layer
         self.resnet.fc = nn.Linear(self.resnet.fc.in_features, num_classes)
 

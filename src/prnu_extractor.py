@@ -38,21 +38,21 @@ class PRNUExtractor:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         else:
             gray = frame
-        
+
         gray = gray.astype(np.float32)
-        
+
         # Resize to target size for consistency
         gray = cv2.resize(gray, self.target_size)
-        
+
         # Wavelet-based denoising (Wiener filter approximation)
         denoised = cv2.GaussianBlur(gray, (3, 3), 0)
-        
+
         # Residual = Original - Denoised
         residual = gray - denoised
-        
+
         # Normalize residual
         residual = (residual - residual.mean()) / (residual.std() + 1e-8)
-        
+
         return residual
 
     def video_to_prnu(self, video_path, num_frames=30, skip_frames=5):
@@ -122,9 +122,9 @@ class PRNUExtractor:
         """
         # Check if directory contains .npy files or videos
         npy_files = [f for f in os.listdir(camera_videos_dir) if f.endswith('.npy')]
-        
+
         all_prnus = []
-        
+
         if npy_files:
             # Load pre-computed PRNU maps
             print(f"Loading {len(npy_files)} PRNU maps...")
@@ -169,20 +169,20 @@ class PRNUExtractor:
         Calculate correlation coefficient between two PRNU patterns
         Implementation from technical specification
         Used for forgery detection and camera identification
-        
+
         Args:
             prnu1: First PRNU pattern
             prnu2: Second PRNU pattern (reference pattern)
-        
+
         Returns:
             float: Correlation coefficient [-1, 1]
         """
         prnu1_flat = prnu1.flatten()
         prnu2_flat = prnu2.flatten()
-        
+
         # Pearson correlation coefficient using numpy
         correlation = np.corrcoef(prnu1_flat, prnu2_flat)[0, 1]
-        
+
         return correlation if not np.isnan(correlation) else 0.0
 
     def detect_forgery(self, test_video_path, camera_name, threshold=0.4):
